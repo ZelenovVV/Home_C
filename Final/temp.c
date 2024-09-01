@@ -13,13 +13,13 @@
 int main(int argc, char *argv[])
 {
     FILE *log;
-    int max_size = 1000;
-    struct Temp* sensors[max_size];
-    int count = 0;
+    long int max_size = 1000000;
+    struct Temp** sensors = malloc(max_size * sizeof(struct Temp*));
+    long int count = 0;
     setlocale(LC_ALL, ".utf-8");
     int rez = 0;
     char *filename = NULL;
-    int number = -1, l = 0, d = 0, t = 0, h = 0;
+    int number = 0, l = 0, d = 0, t = 0, h = 0, f = 0, m = 0;
 
     while ((rez = getopt(argc, argv, "hf:m:ltd")) != -1)
     {
@@ -37,9 +37,11 @@ int main(int argc, char *argv[])
                 printf("-t отсортировать и вывести показаниям датчика по температуре\n");
                 break;
             case 'f':
+                f = 1;
                 filename = optarg;
                 break;
             case 'm':
+                m = 1;
                 number = atoi(optarg);
                 break;
             case 'l':
@@ -57,10 +59,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    if ((h == 0) & (number <= 12))
+    if (h == 0)
     {
-
-        if (filename != NULL)
+        if (f == 1)
         {
             log = fopen(filename, "r");
             count = read_temp_log(sensors, log);
@@ -68,19 +69,22 @@ int main(int argc, char *argv[])
         }
         else
         {
-            log = fopen("temperature.csv", "r");
+            log = fopen("temperature_small.csv", "r");
             count = read_temp_log(sensors, log);
             fclose(log);
         }
+    }
 
-        if ((number > 0) & (number < 13))
+    if (h == 0)
+    {
+        if ((m == 1) && (number > 0) && (number < 13))
         {
             month_aver(sensors, count, number);
             month_max(sensors, count, number);
             month_min(sensors, count, number);
         }
 
-        if (number == 0)
+        if ((m == 1) && (number == 0))
         {
             for (int k = 1; k < 13; k++)
             {
@@ -90,7 +94,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if ((number == -1) & (t == 0) & (d == 0))
+        if ((m == 0) && (t == 0) && (d == 0))
         {
             year_aver(sensors, count);
             year_max(sensors, count);
@@ -115,13 +119,15 @@ int main(int argc, char *argv[])
             print_log(sensors, count);
         }
 
+        if ((m == 1) && (number > 12 || number < 0))
+        {
+            printf("К сожалению вы не знаете сколько месяцев в году\n");
+        }
+
         free_all_temps(sensors, count);
     }
 
-    if (number > 12)
-    {
-        printf("К сожалению вы не знаете сколько месяцев в году\n");
-    }
+    free(sensors);
 
     return 0;
 }
